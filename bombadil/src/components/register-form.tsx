@@ -35,7 +35,7 @@ export function RegisterForm({
           <div className="flex items-center">
             <Label htmlFor="password-repeat">Repeat password</Label>
           </div>
-          <Input id="password" type="password" required />
+          <Input id="password-repeat" type="password" required />
         </div>
         <Button type="submit" variant="defaultBlue" className="w-full">
           Create my account
