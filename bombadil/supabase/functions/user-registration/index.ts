@@ -23,6 +23,18 @@ serve(async (req) => {
   try {
     // Parse request body
     const body: RegistrationRequest = await req.json()
+
+    // Sanitize inputs
+    const sanitize = (input: string) => {
+      return input
+        .trim()
+        .replace(/[<>]/g, '') // Remove < >
+        .slice(0, 255) // Max length
+    }
+
+    body.email = sanitize(body.email)
+    body.name = sanitize(body.name)
+    // Don't sanitize passwords - can break special characters needed for auth
   
     // Validate required fields
     if (!body.email || !body.password || !body.name || !body.passwordRepeat){
@@ -45,6 +57,26 @@ serve(async (req) => {
         JSON.stringify({ 
           error: "Invalid email format",
           message: "Please enter a valid email address." 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
+
+    // Block disposable email domains
+    const disposableDomains = [
+      'tempmail.com', '10minutemail.com', 'guerrillamail.com', 
+      'mailinator.com', 'yopmail.com', 'temp-mail.org'
+    ]
+    
+    const emailDomain = body.email.split('@')[1]?.toLowerCase()
+    if (disposableDomains.includes(emailDomain)) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid email provider",
+          message: "Please use a permanent email address." 
         }),
         { 
           status: 400, 
