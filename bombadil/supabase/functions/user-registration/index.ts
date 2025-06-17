@@ -5,6 +5,7 @@ interface RegistrationRequest {
   email: string
   name: string
   password: string
+  passwordRepeat: string
 }
 
 serve(async (req) => {
@@ -20,17 +21,16 @@ serve(async (req) => {
   }
 
   try {
-    console.log("🚀 Registration function started")
-
     // Parse request body
     const body: RegistrationRequest = await req.json()
-    console.log("📥 Request received for:", body.email)
-
+  
     // Validate required fields
-    if (!body.email || !body.password || !body.name){
-      console.error("❌ Missing required fields")
+    if (!body.email || !body.password || !body.name || !body.passwordRepeat){
       return new Response(
-        JSON.stringify({ error: "Missing required fields." }),
+        JSON.stringify({
+          error: "Validation failed",
+          message: "All fields are required. Please fill in all required information."
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -38,10 +38,28 @@ serve(async (req) => {
       )
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(body.email)) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid email format",
+          message: "Please enter a valid email address." 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
+
+    // Validate password strength
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/.test(body.password)) {
-      console.error("❌ Password is weak.")
       return new Response(
-        JSON.stringify({ error: "❌ Password is weak." }),
+        JSON.stringify({ 
+          error: "Password requirements not met",
+          message: "Password must be at least 8 characters long and contain uppercase letter, lowercase letter, number, and special character." 
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -49,7 +67,19 @@ serve(async (req) => {
       )
     }
 
-
+    // Validate password match
+    if (body.password !== body.passwordRepeat) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Password mismatch",
+          message: "Password confirmation does not match. Please verify your password." 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
 
     // Create Supabase client with service role key
     const supabase = createClient(
@@ -58,10 +88,8 @@ serve(async (req) => {
     )
 
     // Create user in auth.users
-    console.log("👤 Creating user in auth...")
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: body.email,
-      name: body.name,
       password: body.password,
       email_confirm: true,
       user_metadata: {
@@ -70,9 +98,12 @@ serve(async (req) => {
     })
 
     if (authError) {
-      console.error("❌ Auth error:", authError.message)
+      console.error('Auth error:', authError)
       return new Response(
-        JSON.stringify({ error: "Failed to create user: " + authError.message }),
+        JSON.stringify({ 
+          error: "Registration failed",
+          message: authError.message
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -80,24 +111,52 @@ serve(async (req) => {
       )
     }
 
-    console.log("✅ User created with ID:", authData.user?.id)
+    // Insert into users table
+    const { data, error } = await supabase
+      .from('users')
+      .insert([
+        { 
+          id: authData.user?.id, 
+          email: body.email, 
+          name: body.name, 
+          registration_method: authData.user?.app_metadata?.provider || "email"
+        }
+      ])
+      .select()
+
+    if (error) {
+      console.error('Database error:', error)
+      return new Response(
+        JSON.stringify({ 
+          error: "Database error",
+          message: error.message
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         userId: authData.user?.id,
-        message: "User registered successfully" 
+        message: "Account created successfully. Welcome aboard!" 
       }),
       { 
-        status: 200, 
+        status: 201,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       }
     )
 
   } catch (error) {
-    console.error("💥 Unexpected error:", error)
+    console.error('Server error:', error)
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ 
+        error: "Server error",
+        message: "An unexpected error occurred." 
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, "Content-Type": "application/json" }
