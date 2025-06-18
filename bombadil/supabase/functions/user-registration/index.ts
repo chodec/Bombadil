@@ -16,9 +16,15 @@ serve(async (req) => {
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE'
   }
 
+  console.log('Request method:', req.method)
+  console.log('Request headers:', req.headers)
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { 
+      headers: corsHeaders,
+      status: 200 
+    })
   }
 
   try {
@@ -42,6 +48,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           error: "Validation failed",
+          error_input: "all",
           message: "All fields are required. Please fill in all required information."
         }),
         { 
@@ -57,6 +64,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "Invalid email format",
+          error_input: "email",
           message: "Please enter a valid email address." 
         }),
         { 
@@ -77,6 +85,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "Invalid email provider",
+          error_input: "email",
           message: "Please use a permanent email address." 
         }),
         { 
@@ -91,6 +100,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "Password requirements not met",
+          error_input: "password",
           message: "Password must be at least 8 characters long and contain uppercase letter, lowercase letter, number, and special character." 
         }),
         { 
@@ -105,6 +115,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "Password mismatch",
+          error_input: "passwordRepeat",
           message: "Password confirmation does not match. Please verify your password." 
         }),
         { 
@@ -120,6 +131,25 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // check for duplicate
+    const { count, error: checkError } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('email', body.email)
+    
+    if (count && count > 0) {
+    return new Response(
+      JSON.stringify({ 
+        error: "Email already exists",
+        error_input: "email",
+        message: "User with this email already exists"
+      }),
+      { 
+        status: 400, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      }
+    )
+  }
     // Create user in auth.users
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: body.email,

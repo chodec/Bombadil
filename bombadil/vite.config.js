@@ -24,6 +24,6 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve("./src"),
       },
     },
-    define: processEnv  // Všechny REACT_APP_ proměnné
+    define: processEnv 
   }
 })
