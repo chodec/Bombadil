@@ -5,6 +5,7 @@ export const VALIDATION_PATTERNS = {
 
 export const VALIDATION_MESSAGES = {
   email: 'Invalid email format',
+  emailDuplicate: 'User with this email already exists',
   password: 'Password must have at least 8 characters, uppercase, lowercase, number and special character',
   passwordMatch: 'Passwords do not match',
   nameRequired: 'Name must have at least 4 characters'

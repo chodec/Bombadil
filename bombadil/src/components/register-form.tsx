@@ -56,7 +56,7 @@ export function RegisterForm({
             id="email" 
             type="email" 
             placeholder="m@example.com" 
-            value={formData.email}
+            value={formData.email || ''}
             onChange={(e) => onChange('email', e.target.value)}
             className={errors.email ? 'border-red-500' : ''}
             required 

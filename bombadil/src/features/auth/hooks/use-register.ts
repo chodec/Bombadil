@@ -73,8 +73,20 @@ export const useRegister = () => {
       // Redirect to dashboard or wherever
       navigate('/dashboard')
       
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } catch (err: any) {
+      if (err.message && err.message.includes('already exists')) {
+    setErrors(prev => ({
+        ...prev,
+        email: err.message
+      }))
+    } else if (err.field === 'email') {
+      setErrors(prev => ({
+        ...prev,
+        email: err.message
+      }))
+    } else {
+      setError(err.message || 'Something went wrong')
+    }
     } finally {
       setLoading(false)
     }
