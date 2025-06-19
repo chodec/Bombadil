@@ -3,7 +3,6 @@ import { RegisterForm } from "@/components/register-form"
 import { useRegister } from "../hooks/use-register"
 
 export const RegisterPage = () => {
-  // Hook s logikou
   const { 
     formData, 
     loading, 
