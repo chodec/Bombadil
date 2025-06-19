@@ -24,6 +24,20 @@ export interface LoginResponse {
     name: string
     role: 'pending' | 'client' | 'trainer' | 'admin'
   }
+  session: {
+    access_token: string
+    refresh_token: string
+  }
   needsRoleSelection: boolean
+  message: string
+}
+
+export interface SetRoleData {
+  role: 'client' | 'trainer'
+}
+
+export interface SetRoleResponse {
+  success: boolean
+  role: 'client' | 'trainer'
   message: string
 }

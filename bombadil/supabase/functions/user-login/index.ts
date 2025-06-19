@@ -239,6 +239,10 @@ serve(async (req) => {
           name: userData?.name || authData.user?.user_metadata?.full_name,
           role: userData?.role || 'pending'
         },
+        session: {
+          access_token: authData.session?.access_token,
+          refresh_token: authData.session?.refresh_token
+        },
         needsRoleSelection: needsRoleSelection,
         message: needsRoleSelection 
           ? "Login successful. Please complete your profile setup." 
