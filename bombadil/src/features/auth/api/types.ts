@@ -17,5 +17,13 @@ export interface LoginData {
 }
 
 export interface LoginResponse {
-    message: string
+  success: boolean
+  user: {
+    id: string
+    email: string
+    name: string
+    role: 'pending' | 'client' | 'trainer' | 'admin'
+  }
+  needsRoleSelection: boolean
+  message: string
 }
