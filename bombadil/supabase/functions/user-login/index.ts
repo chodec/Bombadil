@@ -1,0 +1,225 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+interface LoginRequest {
+  email: string
+  password: string
+}
+
+serve(async (req) => {
+  // CORS headers
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE'
+  }
+
+  console.log('Request method:', req.method)
+  console.log('Request headers:', req.headers)
+
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { 
+      headers: corsHeaders,
+      status: 200 
+    })
+  }
+
+  try {
+    // Parse request body
+    const body: LoginRequest = await req.json()
+
+    // Sanitize inputs
+    const sanitize = (input: string) => {
+      return input
+        .trim()
+        .replace(/[<>]/g, '') // Remove < >
+        .slice(0, 255) // Max length
+    }
+
+    body.email = sanitize(body.email)
+    // Don't sanitize password - can break special characters needed for auth
+  
+    // Validate required fields
+    if (!body.email || !body.password) {
+      return new Response(
+        JSON.stringify({
+          error: "Validation failed",
+          error_input: "all",
+          message: "Email and password are required."
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(body.email)) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid email format",
+          error_input: "email",
+          message: "Please enter a valid email address." 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
+
+    // Basic password validation (minimum length)
+    if (body.password.length < 8) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid password",
+          error_input: "password",
+          message: "Password must be at least 8 characters long." 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
+
+    // Create Supabase client with service role key for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Create Supabase client with anon key for auth operations
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    )
+
+    // Attempt to sign in the user
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: body.email,
+      password: body.password
+    })
+
+    if (authError) {
+      console.error('Auth error:', authError)
+      
+      // Handle specific auth errors
+      if (authError.message.includes('Invalid login credentials')) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Invalid credentials",
+            error_input: "password",
+            message: "Invalid email or password. Please check your credentials and try again."
+          }),
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+          }
+        )
+      }
+
+      if (authError.message.includes('Email not confirmed')) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Email not confirmed",
+            error_input: "email",
+            message: "Please confirm your email address before logging in."
+          }),
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+          }
+        )
+      }
+
+      if (authError.message.includes('Too many requests')) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Too many attempts",
+            error_input: "all",
+            message: "Too many login attempts. Please try again later."
+          }),
+          { 
+            status: 429, 
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+          }
+        )
+      }
+
+      // Generic auth error
+      return new Response(
+        JSON.stringify({ 
+          error: "Login failed",
+          message: "Unable to log in. Please try again."
+        }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
+
+    // Get user profile from users table
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id, email, name, created_at, registration_method')
+      .eq('id', authData.user?.id)
+      .single()
+
+    if (userError) {
+      console.error('User data error:', userError)
+      // Even if we can't get user data, login was successful
+      console.warn('Could not fetch user profile, but login successful')
+    }
+
+    // Update last login timestamp (optional)
+    if (authData.user?.id) {
+      await supabaseAdmin
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', authData.user.id)
+    }
+
+    // Return successful login response
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        user: {
+          id: authData.user?.id,
+          email: authData.user?.email,
+          name: userData?.name || authData.user?.user_metadata?.full_name,
+          created_at: userData?.created_at,
+          registration_method: userData?.registration_method
+        },
+        session: {
+          access_token: authData.session?.access_token,
+          refresh_token: authData.session?.refresh_token,
+          expires_at: authData.session?.expires_at,
+          expires_in: authData.session?.expires_in
+        },
+        message: "Login successful. Welcome back!" 
+      }),
+      { 
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      }
+    )
+
+  } catch (error) {
+    console.error('Server error:', error)
+    return new Response(
+      JSON.stringify({ 
+        error: "Server error",
+        message: "An unexpected error occurred during login." 
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      }
+    )
+  }
+})

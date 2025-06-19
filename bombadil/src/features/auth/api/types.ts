@@ -10,3 +10,12 @@ export interface RegisterData {
 export interface RegisterResponse {
     message: string
 }
+
+export interface LoginData {
+  email: string
+  password: string
+}
+
+export interface LoginResponse {
+    message: string
+}
