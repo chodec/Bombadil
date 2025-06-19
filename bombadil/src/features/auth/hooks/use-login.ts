@@ -51,9 +51,15 @@ export const useLogin = () => {
     try {
       const response = await loginUser(formData)
       console.log('Login successful:', response)
+      console.log('Session from response:', response.session)
       
-      // Save user data to localStorage
+      // Save user data and session to localStorage
       localStorage.setItem('user', JSON.stringify(response.user))
+      localStorage.setItem('session', JSON.stringify(response.session))
+      
+      console.log('Saved to localStorage:')
+      console.log('User:', localStorage.getItem('user'))
+      console.log('Session:', localStorage.getItem('session'))
       
       // Reset form on success
       setFormData({
