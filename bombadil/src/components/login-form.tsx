@@ -89,7 +89,7 @@ export function LoginForm({
 
         <Button 
           type="submit" 
-          variant="defaultBlue" 
+          variant="defaultGreen" 
           className="w-full"
           disabled={loading}
         >

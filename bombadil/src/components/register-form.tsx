@@ -114,7 +114,7 @@ export function RegisterForm({
 
         <Button 
           type="submit" 
-          variant="defaultBlue" 
+          variant="defaultGreen" 
           className="w-full"
           disabled={loading}
         >
