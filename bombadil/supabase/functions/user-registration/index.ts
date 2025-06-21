@@ -154,11 +154,54 @@ serve(async (req) => {
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: body.email,
       password: body.password,
-      email_confirm: true,
+      //email_confirm: true,
       user_metadata: {
         full_name: body.name
       }
     })
+
+    console.log('User created:', authData.user?.id)
+    console.log('Email confirmed at:', authData.user?.email_confirmed_at)
+
+    if (authError) {
+      console.error('Auth error:', authError)
+      return new Response(
+        JSON.stringify({ 
+          error: "Registration failed",
+          message: authError.message
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
+
+    // Manually trigger confirmation email
+    if (authData.user) {
+      try {
+        console.log('Sending confirmation email...')
+        
+        const emailResult = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/resend`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            'apikey': `${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          },
+          body: JSON.stringify({
+            type: 'signup',
+            email: body.email
+          })
+        })
+        
+        const emailResponse = await emailResult.json()
+        console.log('Email trigger result:', emailResponse)
+        
+      } catch (emailError) {
+        console.error('Failed to trigger confirmation email:', emailError)
+      }
+    }
 
     if (authError) {
       console.error('Auth error:', authError)
