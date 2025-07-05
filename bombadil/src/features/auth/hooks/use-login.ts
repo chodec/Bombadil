@@ -52,25 +52,17 @@ export const useLogin = () => {
       const response = await loginUser(formData)
       console.log('Login successful:', response)
       console.log('Session from response:', response.session)
-      
-      // Save user data and session to localStorage
-      localStorage.setItem('user', JSON.stringify(response.user))
-      localStorage.setItem('session', JSON.stringify(response.session))
-      
+  
+      //local storage for non critical data
+      //session saved to httponly cookie
       console.log('Saved to localStorage:')
-      console.log('User:', localStorage.getItem('user'))
-      console.log('Session:', localStorage.getItem('session'))
-      
-      // Reset form on success
-      setFormData({
-        email: '',
-        password: ''
-      })
+      localStorage.setItem('user', JSON.stringify(response.user)) 
       
       // Handle navigation based on role
       if (response.needsRoleSelection) {
-        navigate('/setup/select-role')
+        navigate('/auth/role-selection')
       } else {
+        console.log(response.user.role)
         // Redirect based on user role
         switch (response.user.role) {
           case 'client':
@@ -82,8 +74,6 @@ export const useLogin = () => {
           case 'admin':
             navigate('/admin/dashboard')
             break
-          default:
-            navigate('/dashboard')
         }
       }
       

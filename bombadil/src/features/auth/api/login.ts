@@ -10,6 +10,7 @@ export const loginUser = async (data: LoginData): Promise<LoginResponse> => {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
     },
+    credentials: 'include',
     body: JSON.stringify(data),
   })
 

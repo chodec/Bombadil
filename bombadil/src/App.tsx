@@ -3,7 +3,7 @@ import { ThemeProvider } from "@/components/ui/theme-provider"
 import { ModeToggle } from "@/components/ui/mode-toggle"
 import Login from './pages/auth/login'
 import Register from './pages/auth/register'
-import { RoleSelectionPage } from './features/auth/pages/roleSelection';
+import RoleSelection from './pages/auth/roleSelection'
 
 function App() {
   return (
@@ -12,7 +12,7 @@ function App() {
         <Routes>
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/register" element={<Register />} />
-          <Route path="/setup/select-role" element={<RoleSelectionPage />} />
+          <Route path="/auth/role-selection" element={<RoleSelection />} />
            <Route path="/" element={
             <div className="flex min-h-svh flex-col items-center justify-center">
               <h1 className="text-5xl font-bold underline">

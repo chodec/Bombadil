@@ -5,9 +5,24 @@ interface SetRoleRequest {
   role: 'client' | 'trainer'
 }
 
+// Helper function to parse cookies
+function getCookieValue(cookieString: string, name: string): string | null {
+  if (!cookieString) return null
+  
+  const cookies = cookieString.split(';')
+  for (const cookie of cookies) {
+    const [key, value] = cookie.trim().split('=')
+    if (key === name) {
+      return value
+    }
+  }
+  return null
+}
+
 serve(async (req) => {
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': 'http://localhost:5173',
+    'Access-Control-Allow-Credentials': 'true', 
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
   }
@@ -20,11 +35,19 @@ serve(async (req) => {
   }
 
   try {
-    // Get user from JWT token
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    // Get access token from cookies
+    const cookieHeader = req.headers.get('Cookie')
+    if (!cookieHeader) {
       return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
+        JSON.stringify({ error: "Missing authentication cookies" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }}
+      )
+    }
+
+    const accessToken = getCookieValue(cookieHeader, 'access_token')
+    if (!accessToken) {
+      return new Response(
+        JSON.stringify({ error: "Missing access token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }}
       )
     }
@@ -36,19 +59,14 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader }
-        }
-      }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    // Get current user
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    // Get current user using access token
+    const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken)
     
     if (userError || !user) {
+      console.error('Auth error:', userError)
       return new Response(
         JSON.stringify({ error: "Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }}

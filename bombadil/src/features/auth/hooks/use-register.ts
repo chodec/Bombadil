@@ -59,19 +59,12 @@ export const useRegister = () => {
     setLoading(true)
     
     try {
+      // Save user 
       const response = await registerUser(formData)
-      console.log('Registration successful:', response)
       
-      // Reset form on success
-      setFormData({
-        email: '',
-        name: '',
-        password: '',
-        passwordRepeat: ''
-      })
+      console.log('Registration successful, check email for confirmation',response)
       
-      // Redirect to dashboard or wherever
-      navigate('/dashboard')
+      navigate('/auth/login')
       
     } catch (err: any) {
       if (err.message && err.message.includes('already exists')) {

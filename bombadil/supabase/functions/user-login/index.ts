@@ -9,7 +9,8 @@ interface LoginRequest {
 serve(async (req) => {
   // CORS headers
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': 'http://localhost:5173', 
+    'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE'
   }
@@ -229,19 +230,22 @@ serve(async (req) => {
         .eq('id', authData.user.id)
     }
 
-    // Return minimal login response
+    const headers = new Headers({
+      ...corsHeaders,
+      "Content-Type": "application/json"
+    })
+
+    headers.append('Set-Cookie', `access_token=${authData.session?.access_token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=3600`)
+    headers.append('Set-Cookie', `refresh_token=${authData.session?.refresh_token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=604800`)
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         user: {
           id: authData.user?.id,
           email: authData.user?.email,
           name: userData?.name || authData.user?.user_metadata?.full_name,
           role: userData?.role || 'pending'
-        },
-        session: {
-          access_token: authData.session?.access_token,
-          refresh_token: authData.session?.refresh_token
         },
         needsRoleSelection: needsRoleSelection,
         message: needsRoleSelection 
@@ -250,9 +254,10 @@ serve(async (req) => {
       }),
       { 
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: headers
       }
     )
+        
 
   } catch (error) {
     console.error('Server error:', error)

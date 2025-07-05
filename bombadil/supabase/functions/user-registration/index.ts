@@ -224,7 +224,8 @@ serve(async (req) => {
         { 
           id: authData.user?.id, 
           email: body.email, 
-          name: body.name, 
+          name: body.name,
+          role: 'pending', 
           registration_method: authData.user?.app_metadata?.provider || "email"
         }
       ])

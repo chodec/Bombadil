@@ -3,42 +3,15 @@ import { API_BASE_URL } from '@/lib/config';
 
 export const setUserRole = async (data: SetRoleData): Promise<SetRoleResponse> => {
   console.log('Setting user role:', data.role)
-  
-  // Debug localStorage
-  console.log('All localStorage keys:', Object.keys(localStorage))
-  console.log('Raw session data:', localStorage.getItem('session'))
-  
-  // Get JWT token from localStorage
-  const sessionData = localStorage.getItem('session')
-  if (!sessionData) {
-    console.error('No session found in localStorage')
-    throw new Error('No session found. Please log in again.')
-  }
-  
-  let session
-  try {
-    session = JSON.parse(sessionData)
-    console.log('Parsed session:', session)
-  } catch (error) {
-    console.error('Failed to parse session data:', error)
-    throw new Error('Invalid session data. Please log in again.')
-  }
-  
-  const accessToken = session.access_token
-  
-  if (!accessToken) {
-    console.error('No access token in session:', session)
-    throw new Error('No access token found. Please log in again.')
-  }
-  
-  console.log('Using access token:', accessToken.substring(0, 20) + '...')
+  console.log('All cookies:', document.cookie)
   
   const response = await fetch(`${API_BASE_URL}/v1/user-role`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`
+      'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
     },
+    credentials: 'include',
     body: JSON.stringify(data),
   })
 

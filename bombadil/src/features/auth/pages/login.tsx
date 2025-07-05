@@ -1,9 +1,8 @@
 import { GalleryVerticalEnd } from "lucide-react"
-import { LoginForm } from "@/components/login-form"
-import { useLogin } from "../hooks/use-login"  // ← Přidej import
+import { LoginForm } from "@/components/auth/login-form"
+import { useLogin } from "../hooks/use-login"  
 
 export const LoginPage = () => {
-  // ← Přidej hook
   const { 
     formData, 
     loading, 
@@ -26,7 +25,6 @@ export const LoginPage = () => {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
-            {/* ← Přidej props */}
             <LoginForm 
               formData={formData}
               errors={errors}

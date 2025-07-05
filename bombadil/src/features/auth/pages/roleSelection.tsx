@@ -1,5 +1,5 @@
 import { GalleryVerticalEnd } from "lucide-react"
-import { RoleSelectionForm } from "@/components/user-selection"
+import { RoleSelectionForm } from "@/components/auth/user-selection"
 import { useRoleSelection } from "../hooks/use-roleSelection"
 
 export const RoleSelectionPage = () => {
