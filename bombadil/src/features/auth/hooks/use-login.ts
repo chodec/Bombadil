@@ -3,22 +3,21 @@ import { useNavigate } from 'react-router-dom'
 import { loginUser } from '../api/login'
 import { LoginData } from '../api/types'  
 import { VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '@/lib/validation'
+import { useAuth } from '@/lib/auth/providers/auth-provider' 
 
 export const useLogin = () => {
   const navigate = useNavigate()
+  const { refreshSession } = useAuth()
   
-  // Form data state
   const [formData, setFormData] = useState<LoginData>({
     email: '',
     password: ''
   })
   
-  // Error states
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Validation function
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
     
@@ -34,14 +33,11 @@ export const useLogin = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Reset previous errors
     setError(null)
     
-    // Validate form
     if (!validateForm()) {
       return
     }
@@ -51,19 +47,16 @@ export const useLogin = () => {
     try {
       const response = await loginUser(formData)
       console.log('Login successful:', response)
-      console.log('Session from response:', response.session)
-  
-      //local storage for non critical data
-      //session saved to httponly cookie
-      console.log('Saved to localStorage:')
-      localStorage.setItem('user', JSON.stringify(response.user)) 
+      console.log('LOGIN RESPONSE:', response)
+      console.log('USER ROLE:', response.user.role)
+      console.log('NEEDS ROLE SELECTION:', response.needsRoleSelection)
       
-      // Handle navigation based on role
+      localStorage.setItem('user', JSON.stringify(response.user)) 
+      await refreshSession()
+      
       if (response.needsRoleSelection) {
         navigate('/auth/role-selection')
       } else {
-        console.log(response.user.role)
-        // Redirect based on user role
         switch (response.user.role) {
           case 'client':
             navigate('/client/dashboard')
@@ -78,7 +71,6 @@ export const useLogin = () => {
       }
       
     } catch (err: any) {
-      // Handle specific error cases
       if (err.message && err.message.includes('Invalid email or password')) {
         setErrors(prev => ({
           ...prev,
@@ -102,14 +94,12 @@ export const useLogin = () => {
     }
   }
 
-  // Handle input changes
   const updateFormData = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
     
-    // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,

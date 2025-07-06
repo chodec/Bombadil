@@ -7,7 +7,6 @@ interface LoginRequest {
 }
 
 serve(async (req) => {
-  // CORS headers
   const corsHeaders = {
     'Access-Control-Allow-Origin': 'http://localhost:5173', 
     'Access-Control-Allow-Credentials': 'true',
@@ -18,7 +17,6 @@ serve(async (req) => {
   console.log('Request method:', req.method)
   console.log('Request headers:', req.headers)
 
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { 
       headers: corsHeaders,
@@ -27,21 +25,17 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body
     const body: LoginRequest = await req.json()
 
-    // Sanitize inputs
     const sanitize = (input: string) => {
       return input
         .trim()
-        .replace(/[<>]/g, '') // Remove < >
-        .slice(0, 255) // Max length
+        .replace(/[<>]/g, '')
+        .slice(0, 255)
     }
 
     body.email = sanitize(body.email)
-    // Don't sanitize password - can break special characters needed for auth
   
-    // Validate required fields
     if (!body.email || !body.password) {
       return new Response(
         JSON.stringify({
@@ -56,7 +50,6 @@ serve(async (req) => {
       )
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(body.email)) {
       return new Response(
@@ -72,7 +65,6 @@ serve(async (req) => {
       )
     }
 
-    // Basic password validation (minimum length)
     if (body.password.length < 8) {
       return new Response(
         JSON.stringify({ 
@@ -87,19 +79,16 @@ serve(async (req) => {
       )
     }
 
-    // Create Supabase client with service role key for admin operations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Create Supabase client with anon key for auth operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    // Attempt to sign in the user
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: body.email,
       password: body.password
@@ -108,7 +97,6 @@ serve(async (req) => {
     if (authError) {
       console.error('Auth error:', authError)
       
-      // Handle specific auth errors
       if (authError.message.includes('Invalid login credentials')) {
         return new Response(
           JSON.stringify({ 
@@ -151,7 +139,6 @@ serve(async (req) => {
         )
       }
 
-      // Generic auth error
       return new Response(
         JSON.stringify({ 
           error: "Login failed",
@@ -164,7 +151,6 @@ serve(async (req) => {
       )
     }
 
-    // Get user profile from users table
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, email, name, role, created_at, registration_method')
@@ -185,44 +171,12 @@ serve(async (req) => {
       )
     }
 
-    // Check user role and determine if role selection is needed
     let needsRoleSelection = false
 
     if (userData.role === 'pending' || !userData.role) {
-      // User needs to select role
       needsRoleSelection = true
-    } else if (userData.role === 'client') {
-      // Check if client profile exists
-      const { data: clientData, error: clientError } = await supabaseAdmin
-        .from('clients')
-        .select('id')
-        .eq('user_id', userData.id)
-        .single()
-      
-      if (clientError || !clientData) {
-        console.warn('Client profile missing for user:', userData.id)
-        // Client profile missing - need to create it or role is inconsistent
-        needsRoleSelection = true
-      }
-    } else if (userData.role === 'trainer') {
-      // Check if trainer profile exists
-      const { data: trainerData, error: trainerError } = await supabaseAdmin
-        .from('trainers')
-        .select('id')
-        .eq('user_id', userData.id)
-        .single()
-      
-      if (trainerError || !trainerData) {
-        console.warn('Trainer profile missing for user:', userData.id)
-        // Trainer profile missing - need to create it or role is inconsistent
-        needsRoleSelection = true
-      }
-    } else {
-      // For admin or other roles, no role selection needed
-      needsRoleSelection = false
     }
 
-    // Update last login timestamp
     if (authData.user?.id) {
       await supabaseAdmin
         .from('users')
@@ -235,8 +189,8 @@ serve(async (req) => {
       "Content-Type": "application/json"
     })
 
-    headers.append('Set-Cookie', `access_token=${authData.session?.access_token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=3600`)
-    headers.append('Set-Cookie', `refresh_token=${authData.session?.refresh_token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=604800`)
+    headers.append('Set-Cookie', `access_token=${authData.session?.access_token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`)
+    headers.append('Set-Cookie', `refresh_token=${authData.session?.refresh_token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800`)
 
     return new Response(
       JSON.stringify({
@@ -257,7 +211,6 @@ serve(async (req) => {
         headers: headers
       }
     )
-        
 
   } catch (error) {
     console.error('Server error:', error)

@@ -1,0 +1,4 @@
+url http://localhost:54323/project/default
+http://localhost:54324/ 
+npx supabase status
+supabase functions serve

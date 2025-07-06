@@ -1,29 +1,22 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { setUserRole } from '../api/userRole'
+import { useAuth } from '@/lib/auth/providers/auth-provider'
 
 export const useRoleSelection = () => {
   const navigate = useNavigate()
+  const { setUserRole, refreshSession } = useAuth()
   
-  // State
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Handle role selection
   const handleRoleSelect = async (role: 'client' | 'trainer') => {
     setLoading(true)
     setError(null)
     
     try {
-      const response = await setUserRole({ role })
-      console.log('Role set successfully:', response)
+      await setUserRole(role)
+      await refreshSession()
       
-      // Update user data in localStorage
-      const userData = JSON.parse(localStorage.getItem('user') || '{}')
-      userData.role = role
-      localStorage.setItem('user', JSON.stringify(userData))
-      
-      // Navigate to appropriate dashboard
       if (role === 'client') {
         navigate('/client/dashboard')
       } else {
