@@ -19,7 +19,7 @@ serve(async (req) => {
     'Access-Control-Allow-Origin': 'http://localhost:5173', 
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE'
+    'Access-Control-Allow-Methods': 'GET, OPTIONS'
   }
 
   console.log('Request method:', req.method)

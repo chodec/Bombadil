@@ -10,7 +10,7 @@ import {
   Activity
 } from "lucide-react"
 
-export function TrainerDashboardPage () { 
+export const TrainerDashboardPage = () => {
   // Mock data - later replace with actual API calls
   const stats = {
     totalClients: 24,

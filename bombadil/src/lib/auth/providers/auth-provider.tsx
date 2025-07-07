@@ -41,8 +41,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.ok) {
         const data = await response.json()
-        setUser(data.user)  // načte aktuální roli z DB
-        localStorage.setItem('user', JSON.stringify(data.user))  // aktualizuj localStorage
+        setUser(data.user)  
+        localStorage.setItem('user', JSON.stringify(data.user)) 
       } else {
         setUser(null)
         localStorage.removeItem('user')
