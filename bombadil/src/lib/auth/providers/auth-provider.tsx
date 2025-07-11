@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+// 1. src/lib/auth/providers/auth-provider.tsx
+import React, { createContext, useContext, useState } from 'react'
 import { API_BASE_URL } from '@/lib/config'
 
 interface User {
@@ -24,106 +25,102 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+ const [user, setUser] = useState<User | null>(null)
+ const [loading, setLoading] = useState(false)
 
-  const checkSession = async () => {
-    try {
-      setLoading(true)
-      
-      const response = await fetch(`${API_BASE_URL}/v1/verify-session`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
-        },
-        credentials: 'include',
-      })
+ const checkSession = async () => {
+   try {
+     setLoading(true)
+     
+     const response = await fetch(`${API_BASE_URL}/v1/verify-session`, {
+       method: 'GET',
+       headers: {
+         'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+       },
+       credentials: 'include',
+     })
 
-      if (response.ok) {
-        const data = await response.json()
-        setUser(data.user)  
-        localStorage.setItem('user', JSON.stringify(data.user)) 
-      } else {
-        setUser(null)
-        localStorage.removeItem('user')
-      }
-      
-    } catch (error) {
-      console.error('Session check failed:', error)
-      setUser(null)
-      localStorage.removeItem('user')
-    } finally {
-      setLoading(false)
-    }
-  }
+     if (response.ok) {
+       const data = await response.json()
+       setUser(data.user)  
+       localStorage.setItem('user', JSON.stringify(data.user)) 
+     } else {
+       setUser(null)
+       localStorage.removeItem('user')
+     }
+     
+   } catch (error) {
+     console.log('No active session found')
+     setUser(null)
+     localStorage.removeItem('user')
+   } finally {
+     setLoading(false)
+   }
+ }
 
-  const logout = async () => {
-    try {
-      await fetch(`${API_BASE_URL}/v1/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
-        },
-        credentials: 'include',
-      })
-    } catch (error) {
-      console.error('Logout failed:', error)
-    } finally {
-      setUser(null)
-      localStorage.removeItem('user')
-    }
-  }
+ const logout = async () => {
+   try {
+     await fetch(`${API_BASE_URL}/v1/logout`, {
+       method: 'POST',
+       headers: {
+         'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+       },
+       credentials: 'include',
+     })
+   } catch (error) {
+     console.error('Logout failed:', error)
+   } finally {
+     setUser(null)
+     localStorage.removeItem('user')
+   }
+ }
 
-  const setUserRole = async (role: 'client' | 'trainer') => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/v1/user-role`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
-        },
-        credentials: 'include',
-        body: JSON.stringify({ role }),
-      })
+ const setUserRole = async (role: 'client' | 'trainer') => {
+   try {
+     const response = await fetch(`${API_BASE_URL}/v1/user-role`, {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json',
+         'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+       },
+       credentials: 'include',
+       body: JSON.stringify({ role }),
+     })
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
-      }
+     if (!response.ok) {
+       const errorData = await response.json().catch(() => ({}))
+       throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+     }
 
-      const data = await response.json()
-      
-      if (user) {
-        const updatedUser = { ...user, role }
-        setUser(updatedUser)
-        localStorage.setItem('user', JSON.stringify(updatedUser))
-      }
+     const data = await response.json()
+     
+     if (user) {
+       const updatedUser = { ...user, role }
+       setUser(updatedUser)
+       localStorage.setItem('user', JSON.stringify(updatedUser))
+     }
 
-      return data
-    } catch (error) {
-      console.error('Set role failed:', error)
-      throw error
-    }
-  }
+     return data
+   } catch (error) {
+     console.error('Set role failed:', error)
+     throw error
+   }
+ }
 
-  const refreshSession = async () => {
-    await checkSession()
-  }
+ const refreshSession = async () => {
+   await checkSession()
+ }
 
-  useEffect(() => {
-    checkSession()
-  }, [])
+ const value: AuthContextType = {
+   user,
+   loading,
+   isAuthenticated: !!user,
+   logout,
+   refreshSession,
+   setUserRole
+ }
 
-  const value: AuthContextType = {
-    user,
-    loading,
-    isAuthenticated: !!user,
-    logout,
-    refreshSession,
-    setUserRole
-  }
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+ return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

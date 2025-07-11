@@ -1,4 +1,13 @@
-url http://localhost:54323/project/default
+url
+http://localhost:54323/project/default
+
+email
 http://localhost:54324/ 
-npx supabase status
+
+
+supabase status
 supabase functions serve
+
+
+supabase start
+ngrok http 54321

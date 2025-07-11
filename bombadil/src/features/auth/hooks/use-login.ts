@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { loginUser } from '../api/login'
 import { LoginData } from '../api/types'  
 import { VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '@/lib/validation'
-import { useAuth } from '@/lib/auth/providers/auth-provider' 
+import { useAuth } from '@/lib/auth/providers/auth-provider'
+import { supabase } from '@/lib/supabase'
 
 export const useLogin = () => {
   const navigate = useNavigate()
@@ -94,6 +95,28 @@ export const useLogin = () => {
     }
   }
 
+  const signInWithGoogle = async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google'
+      })
+      
+      if (error) {
+        setError('Google sign-in failed. Please try again.')
+        console.error('Google OAuth error:', error)
+      }
+      
+    } catch (err: any) {
+      setError('Google sign-in failed. Please try again.')
+      console.error('Google OAuth error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const updateFormData = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -113,6 +136,7 @@ export const useLogin = () => {
     loading,
     error,
     errors,
+    signInWithGoogle,
     handleSubmit,
     updateFormData
   }

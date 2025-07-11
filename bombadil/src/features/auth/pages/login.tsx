@@ -9,7 +9,8 @@ export const LoginPage = () => {
     error, 
     errors, 
     handleSubmit, 
-    updateFormData 
+    updateFormData,
+    signInWithGoogle 
   } = useLogin()
 
   return (
@@ -32,6 +33,7 @@ export const LoginPage = () => {
               error={error}
               onSubmit={handleSubmit}
               onChange={updateFormData}
+              signInWithGoogle={signInWithGoogle}
             />
           </div>
         </div>
