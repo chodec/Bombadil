@@ -9,8 +9,7 @@ export const RegisterPage = () => {
     error, 
     errors, 
     handleSubmit, 
-    updateFormData,
-    signInWithGoogle 
+    updateFormData 
   } = useRegister()
 
   return (
@@ -33,7 +32,6 @@ export const RegisterPage = () => {
               error={error}
               onSubmit={handleSubmit}
               onChange={updateFormData}
-              signInWithGoogle={signInWithGoogle}
             />
           </div>
         </div>

@@ -11,3 +11,4 @@ supabase functions serve
 
 supabase start
 ngrok http 54321
+supabase stop 

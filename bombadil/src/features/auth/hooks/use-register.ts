@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
 import { registerUser } from '../api/register'
 import { RegisterData } from '../api/types'  
 import { VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '@/lib/validation'
@@ -7,7 +8,6 @@ import { VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '@/lib/validation'
 export const useRegister = () => {
   const navigate = useNavigate()
   
-  // Form data state
   const [formData, setFormData] = useState<RegisterData>({
     email: '',
     name: '',
@@ -15,12 +15,29 @@ export const useRegister = () => {
     passwordRepeat: ''
   })
   
-  // Error states
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Validation function
+  const registerMutation = useMutation({
+    mutationFn: registerUser,
+    onSuccess: (response) => {
+      console.log('Registration successful, check email for confirmation', response)
+      navigate('/auth/login')
+    },
+    onError: (err: any) => {
+      if (err.message && err.message.includes('already exists')) {
+        setErrors(prev => ({
+          ...prev,
+          email: err.message
+        }))
+      } else if (err.field === 'email') {
+        setErrors(prev => ({
+          ...prev,
+          email: err.message
+        }))
+      }
+    }
+  })
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
     
@@ -44,55 +61,22 @@ export const useRegister = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Reset previous errors
-    setError(null)
-    
-    // Validate form
     if (!validateForm()) {
       return
     }
     
-    setLoading(true)
-    
-    try {
-      // Save user 
-      const response = await registerUser(formData)
-      
-      console.log('Registration successful, check email for confirmation',response)
-      
-      navigate('/auth/login')
-      
-    } catch (err: any) {
-      if (err.message && err.message.includes('already exists')) {
-    setErrors(prev => ({
-        ...prev,
-        email: err.message
-      }))
-    } else if (err.field === 'email') {
-      setErrors(prev => ({
-        ...prev,
-        email: err.message
-      }))
-    } else {
-      setError(err.message || 'Something went wrong')
-    }
-    } finally {
-      setLoading(false)
-    }
+    registerMutation.mutate(formData)
   }
 
-  // Handle input changes
   const updateFormData = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
     
-    // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -103,8 +87,8 @@ export const useRegister = () => {
 
   return {
     formData,
-    loading,
-    error,
+    loading: registerMutation.isPending,
+    error: registerMutation.error?.message || null,
     errors,
     handleSubmit,
     updateFormData
