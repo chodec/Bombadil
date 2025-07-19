@@ -1,6 +1,6 @@
 import React from "react";
-import { CallbackPage } from '@/features/auth/pages/callback'
+import { AuthCallbackPage } from '@/features/auth/pages/callback'
 
-export default function Callback() {
-    return <CallbackPage />;
+export default function AuthCallback() {
+    return <AuthCallbackPage />;
 }

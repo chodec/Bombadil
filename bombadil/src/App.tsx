@@ -8,7 +8,7 @@ import Login from './pages/auth/login'
 import Register from './pages/auth/register'
 import RoleSelection from './pages/auth/roleSelection'
 import TrainerDashboard from './pages/trainer/trainerDashboard'
-import Callback from './pages/auth/callback'
+import AuthCallback from './pages/auth/callback'
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
           <Routes>
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
-            <Route path="/auth/callback" element={<Callback />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/" element={
               <div className="flex min-h-svh flex-col items-center justify-center">
                 <h1 className="text-5xl font-bold underline">Hello world!</h1>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loginUser } from '../api/login'
 import { LoginData } from '../api/types'  
@@ -19,6 +19,79 @@ export const useLogin = () => {
   const [error, setError] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // Auth state listener pro Google OAuth
+  useEffect(() => { 
+    console.log('=== AUTH LISTENER SETUP ===')
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔥 AUTH EVENT:', event)
+      console.log('🔥 SESSION:', session)
+      console.log('🔥 USER EMAIL:', session?.user?.email)
+      console.log('Auth state change:', event, session?.user?.email)
+      
+      if (event === 'SIGNED_IN' && session) {
+        setLoading(true)
+        try {
+          // Zkontrolovat profil uživatele
+          const { data: userProfile, error: profileError } = await supabase
+            .from('users')
+            .select('id, email, name, role')
+            .eq('id', session.user.id)
+            .single()
+
+          if (profileError && profileError.code === 'PGRST116') {
+            // Uživatel neexistuje v tabulce users, potřebuje výběr role
+            console.log("User profile not found, redirecting to role selection")
+            navigate('/auth/role-selection')
+          } else if (profileError) {
+            console.error('Error fetching user profile:', profileError)
+            setError('Failed to load user profile. Please try again.')
+          } else if (userProfile && userProfile.role && userProfile.role !== 'pending') {
+            // Uživatel má roli, přesměrovat podle role
+            localStorage.setItem('user', JSON.stringify({ 
+              ...session.user, 
+              role: userProfile.role,
+              name: userProfile.name 
+            }))
+            
+            await refreshSession()
+            
+            switch (userProfile.role) {
+              case 'client':
+                navigate('/client/dashboard')
+                break
+              case 'trainer':
+                navigate('/trainer/dashboard')
+                break
+              case 'admin':
+                navigate('/admin/dashboard')
+                break
+              default:
+                navigate('/') 
+                break
+            }
+          } else {
+            // Uživatel přihlášen, ale nemá roli nebo má pending
+            console.log("User signed in but no role found, redirecting to role selection")
+            navigate('/auth/role-selection')
+          }
+        } catch (err: any) {
+          console.error('Error during post-login processing:', err)
+          setError('An error occurred after login. Please try again.')
+        } finally {
+          setLoading(false)
+        }
+      } else if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('user')
+      }
+    })
+
+    return () => {
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe()
+      }
+    }
+  }, [navigate, refreshSession])
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
     
@@ -34,6 +107,7 @@ export const useLogin = () => {
     return Object.keys(newErrors).length === 0
   }
 
+  // Email/password login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -48,9 +122,6 @@ export const useLogin = () => {
     try {
       const response = await loginUser(formData)
       console.log('Login successful:', response)
-      console.log('LOGIN RESPONSE:', response)
-      console.log('USER ROLE:', response.user.role)
-      console.log('NEEDS ROLE SELECTION:', response.needsRoleSelection)
       
       localStorage.setItem('user', JSON.stringify(response.user)) 
       await refreshSession()
@@ -67,6 +138,9 @@ export const useLogin = () => {
             break
           case 'admin':
             navigate('/admin/dashboard')
+            break
+          default:
+            navigate('/') 
             break
         }
       }
@@ -96,24 +170,21 @@ export const useLogin = () => {
   }
 
   const signInWithGoogle = async () => {
-    setLoading(true)
-    setError(null)
+    const origin = window.location.origin;
     
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google'
-      })
-      
-      if (error) {
-        setError('Google sign-in failed. Please try again.')
-        console.error('Google OAuth error:', error)
-      }
-      
-    } catch (err: any) {
-      setError('Google sign-in failed. Please try again.')
-      console.error('Google OAuth error:', err)
-    } finally {
-      setLoading(false)
+    console.log('🔍 Origin:', origin)
+    console.log('🔍 Redirect to:', `${origin}/auth/callback`)
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google"
+    })
+    
+    console.log('🔍 OAuth data:', data)
+    console.log('🔍 OAuth URL:', data.url)
+    
+    if (data.url) {
+      console.log('🚀 Redirecting to:', data.url)
+      window.location.href = data.url;
     }
   }
 
