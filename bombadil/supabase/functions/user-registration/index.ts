@@ -9,17 +9,12 @@ interface RegistrationRequest {
 }
 
 serve(async (req) => {
-  // CORS headers
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE'
   }
 
-  console.log('Request method:', req.method)
-  console.log('Request headers:', req.headers)
-
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { 
       headers: corsHeaders,
@@ -28,10 +23,8 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body
     const body: RegistrationRequest = await req.json()
 
-    // Sanitize inputs
     const sanitize = (input: string) => {
       return input
         .trim()

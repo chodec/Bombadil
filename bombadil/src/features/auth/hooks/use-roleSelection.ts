@@ -1,13 +1,13 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/lib/auth/providers/auth-provider'
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth/providers/auth-provider';
 
 export const useRoleSelection = () => {
-  const navigate = useNavigate()
-  const { refreshSession } = useAuth()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate();
+  const { user: authUser, refreshSession } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const createTrainerRecord = async (userId: string) => {
     try {
@@ -15,34 +15,34 @@ export const useRoleSelection = () => {
         .from('trainers')
         .select('*')
         .eq('user_id', userId)
-        .maybeSingle()
+        .maybeSingle();
 
       if (checkError) {
-        throw checkError
+        throw checkError;
       }
 
       if (!existingTrainer) {
         const { data: newTrainer, error: insertError } = await supabase
           .from('trainers')
           .insert({
-            user_id: userId
+            user_id: userId,
           })
           .select()
-          .single()
+          .single();
 
         if (insertError) {
-          throw insertError
+          throw insertError;
         }
 
-        return newTrainer
+        return newTrainer;
       } else {
-        return existingTrainer
+        return existingTrainer;
       }
     } catch (error) {
-      console.error('Error creating trainer record:', error)
-      throw error
+      console.error('Error creating trainer record:', error);
+      throw error;
     }
-  }
+  };
 
   const createClientRecord = async (userId: string) => {
     try {
@@ -50,34 +50,34 @@ export const useRoleSelection = () => {
         .from('clients')
         .select('*')
         .eq('user_id', userId)
-        .maybeSingle()
+        .maybeSingle();
 
       if (checkError) {
-        throw checkError
+        throw checkError;
       }
 
       if (!existingClient) {
         const { data: newClient, error: insertError } = await supabase
           .from('clients')
           .insert({
-            user_id: userId
+            user_id: userId,
           })
           .select()
-          .single()
+          .single();
 
         if (insertError) {
-          throw insertError
+          throw insertError;
         }
 
-        return newClient
+        return newClient;
       } else {
-        return existingClient
+        return existingClient;
       }
     } catch (error) {
-      console.error('Error creating client record:', error)
-      throw error
+      console.error('Error creating client record:', error);
+      throw error;
     }
-  }
+  };
 
   const updateUserRole = async (userId: string, role: string) => {
     try {
@@ -86,77 +86,75 @@ export const useRoleSelection = () => {
         .update({ role })
         .eq('id', userId)
         .select()
-        .single()
+        .single();
 
       if (updateError) {
-        throw updateError
+        throw updateError;
       }
 
       if (role === 'trainer') {
-        await createTrainerRecord(userId)
+        await createTrainerRecord(userId);
       } else if (role === 'client') {
-        await createClientRecord(userId)
+        await createClientRecord(userId);
       }
 
-      return updatedUser
+      return updatedUser;
     } catch (error) {
-      console.error('Error updating user role:', error)
-      throw error
+      console.error('Error updating user role:', error);
+      throw error;
     }
-  }
+  };
 
   const redirectByRole = (role: string) => {
     switch (role) {
       case 'client':
-        navigate('/client/dashboard')
-        break
+        navigate('/client/dashboard');
+        break;
       case 'trainer':
-        navigate('/trainer/dashboard')
-        break
+        navigate('/trainer/dashboard');
+        break;
       case 'admin':
-        navigate('/admin/dashboard')
-        break
+        navigate('/admin/dashboard');
+        break;
       default:
-        navigate('/')
-        break
+        navigate('/');
+        break;
     }
-  }
+  };
 
   const handleRoleSelect = async (role: string) => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
-      const { data: { user }, error: getUserError } = await supabase.auth.getUser()
-
-      if (getUserError || !user) {
-        throw new Error('User not authenticated')
+      if (!authUser) {
+        throw new Error('User not authenticated');
       }
 
-      const updatedUser = await updateUserRole(user.id, role)
+      const updatedUser = await updateUserRole(authUser.id, role);
 
       const userData = {
-        ...user,
+        ...authUser,
         role: updatedUser.role,
-        name: updatedUser.name
-      }
+        name: updatedUser.name,
+      };
 
-      localStorage.setItem('user', JSON.stringify(userData))
-      await refreshSession()
+      localStorage.setItem('user', JSON.stringify(userData));
 
-      redirectByRole(role)
+      await refreshSession();
 
+      redirectByRole(role);
     } catch (err: any) {
-      console.error('Error selecting role:', err)
-      setError(err.message || 'Failed to select role. Please try again.')
+      console.error('Error selecting role:', err);
+      setError(err.message || 'Failed to select role. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return {
     loading,
     error,
-    handleRoleSelect
-  }
-}
+    handleRoleSelect,
+  };
+};

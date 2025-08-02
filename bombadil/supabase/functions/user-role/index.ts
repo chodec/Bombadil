@@ -5,7 +5,6 @@ interface SetRoleRequest {
   role: 'client' | 'trainer'
 }
 
-// Helper function to parse cookies
 function getCookieValue(cookieString: string, name: string): string | null {
   if (!cookieString) return null
   
@@ -21,7 +20,7 @@ function getCookieValue(cookieString: string, name: string): string | null {
 
 serve(async (req) => {
   const corsHeaders = {
-    'Access-Control-Allow-Origin': 'http://localhost:5173',
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Credentials': 'true', 
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'

@@ -15,7 +15,6 @@ export const setUserRole = async (data: SetRoleData): Promise<SetRoleResponse> =
     body: JSON.stringify(data),
   })
 
-  // Error handling
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
     console.error('API Error:', errorData)

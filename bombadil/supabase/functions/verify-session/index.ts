@@ -16,6 +16,7 @@ function getCookieValue(cookieString: string, name: string): string | null {
 
 serve(async (req) => {
   const corsHeaders = {
+    // Oprava: Změna * na explicitní doménu
     'Access-Control-Allow-Origin': 'http://localhost:5173', 
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',

@@ -1,13 +1,36 @@
-import { GalleryVerticalEnd } from "lucide-react"
-import { RoleSelectionForm } from "@/components/auth/user-selection"
-import { useRoleSelection } from "../hooks/use-roleSelection"
+import { GalleryVerticalEnd } from "lucide-react";
+import { RoleSelectionForm } from "@/components/auth/user-selection";
+import { useRoleSelection } from "../hooks/use-roleSelection";
+import { useAuth } from '@/lib/auth/providers/auth-provider';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const RoleSelectionPage = () => {
+  const { loading: authLoading, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/auth/login');
+    }
+  }, [authLoading, isAuthenticated, navigate]);
+
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="flex min-h-svh items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p>Processing session...</p>
+        </div>
+      </div>
+    );
+  }
+  
   const { 
-    loading, 
+    loading: formLoading, 
     error, 
     handleRoleSelect 
-  } = useRoleSelection()
+  } = useRoleSelection();
 
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
@@ -23,7 +46,7 @@ export const RoleSelectionPage = () => {
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
             <RoleSelectionForm 
-              loading={loading}
+              loading={formLoading}
               error={error}
               onRoleSelect={handleRoleSelect}
             />
@@ -38,5 +61,5 @@ export const RoleSelectionPage = () => {
         />
       </div>
     </div>
-  )
-}
+  );
+};
