@@ -3,7 +3,7 @@ import { RoleSelectionPage } from '@/features/auth/pages/roleSelection'
 
 export default function RoleSelection() {
   return (
-    <RouteGuard requireAuth={true}>
+    <RouteGuard>
       <RoleSelectionPage />
     </RouteGuard>
   )

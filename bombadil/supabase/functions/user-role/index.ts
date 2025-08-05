@@ -34,7 +34,6 @@ serve(async (req) => {
   }
 
   try {
-    // Get access token from cookies
     const cookieHeader = req.headers.get('Cookie')
     if (!cookieHeader) {
       return new Response(
@@ -61,7 +60,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    // Get current user using access token
     const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken)
     
     if (userError || !user) {
@@ -74,7 +72,6 @@ serve(async (req) => {
 
     const body: SetRoleRequest = await req.json()
 
-    // Validate role
     if (!['client', 'trainer'].includes(body.role)) {
       return new Response(
         JSON.stringify({ 
@@ -85,7 +82,6 @@ serve(async (req) => {
       )
     }
 
-    // Update user role
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({ role: body.role })
@@ -99,7 +95,6 @@ serve(async (req) => {
       )
     }
 
-    // Create profile in appropriate table
     if (body.role === 'client') {
       const { error: clientError } = await supabaseAdmin
         .from('clients')

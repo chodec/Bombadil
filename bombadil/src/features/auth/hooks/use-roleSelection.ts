@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth/providers/auth-provider';
 
 export const useRoleSelection = () => {
   const navigate = useNavigate();
-  const { user: authUser, refreshSession } = useAuth();
+  const { user: authUser, refreshProfile } = useAuth(); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,10 +88,11 @@ export const useRoleSelection = () => {
         .select()
         .single();
 
+        
       if (updateError) {
         throw updateError;
       }
-
+      
       if (role === 'trainer') {
         await createTrainerRecord(userId);
       } else if (role === 'client') {
@@ -105,23 +106,6 @@ export const useRoleSelection = () => {
     }
   };
 
-  const redirectByRole = (role: string) => {
-    switch (role) {
-      case 'client':
-        navigate('/client/dashboard');
-        break;
-      case 'trainer':
-        navigate('/trainer/dashboard');
-        break;
-      case 'admin':
-        navigate('/admin/dashboard');
-        break;
-      default:
-        navigate('/');
-        break;
-    }
-  };
-
   const handleRoleSelect = async (role: string) => {
     setLoading(true);
     setError(null);
@@ -131,19 +115,22 @@ export const useRoleSelection = () => {
         throw new Error('User not authenticated');
       }
 
-      const updatedUser = await updateUserRole(authUser.id, role);
+      await updateUserRole(authUser.id, role);
 
-      const userData = {
-        ...authUser,
-        role: updatedUser.role,
-        name: updatedUser.name,
-      };
+      await refreshProfile();
 
-      localStorage.setItem('user', JSON.stringify(userData));
+      switch (role) {
+        case 'client':
+            navigate('/client/dashboard');
+            break;
+        case 'trainer':
+            navigate('/trainer/dashboard');
+            break;
+        default:
+            navigate('/');
+            break;
+      }
 
-      await refreshSession();
-
-      redirectByRole(role);
     } catch (err: any) {
       console.error('Error selecting role:', err);
       setError(err.message || 'Failed to select role. Please try again.');
