@@ -6,16 +6,40 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export const RoleSelectionPage = () => {
-  const { loading: authLoading, isAuthenticated } = useAuth();
+  const { profile, loading: authLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  
+  const { 
+    loading: formLoading, 
+    error, 
+    handleRoleSelect 
+  } = useRoleSelection();
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/auth/login');
-    }
-  }, [authLoading, isAuthenticated, navigate]);
+    if (authLoading) return;
 
-  if (authLoading || !isAuthenticated) {
+    if (!isAuthenticated) {
+      navigate('/auth/login', { replace: true });
+      return;
+    }
+    
+    if (profile && profile.role !== 'pending') {
+      switch (profile.role) {
+        case 'client':
+          navigate('/client/dashboard', { replace: true });
+          break;
+        case 'trainer':
+          navigate('/trainer/dashboard', { replace: true });
+          break;
+        default:
+          navigate('/', { replace: true });
+          break;
+      }
+    }
+
+  }, [authLoading, isAuthenticated, profile, navigate]);
+  
+  if (authLoading) {
     return (
       <div className="flex min-h-svh items-center justify-center">
         <div className="text-center">
@@ -25,41 +49,39 @@ export const RoleSelectionPage = () => {
       </div>
     );
   }
-  
-  const { 
-    loading: formLoading, 
-    error, 
-    handleRoleSelect 
-  } = useRoleSelection();
 
-  return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-center gap-2 md:justify-start">
-          <a href="#" className="flex items-center gap-2 font-medium">
-            <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-4" />
+  if (isAuthenticated && profile?.role === 'pending') {
+    return (
+      <div className="grid min-h-svh lg:grid-cols-2">
+        <div className="flex flex-col gap-4 p-6 md:p-10">
+          <div className="flex justify-center gap-2 md:justify-start">
+            <a href="#" className="flex items-center gap-2 font-medium">
+              <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
+                <GalleryVerticalEnd className="size-4" />
+              </div>
+              Bombadil
+            </a>
+          </div>
+          <div className="flex flex-1 items-center justify-center">
+            <div className="w-full max-w-xs">
+              <RoleSelectionForm 
+                loading={formLoading}
+                error={error}
+                onRoleSelect={handleRoleSelect}
+              />
             </div>
-            Bombadil
-          </a>
-        </div>
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
-            <RoleSelectionForm 
-              loading={formLoading}
-              error={error}
-              onRoleSelect={handleRoleSelect}
-            />
           </div>
         </div>
+        <div className="bg-muted relative hidden lg:block">
+          <img
+            src="/placeholder.svg"
+            alt="Image"
+            className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          />
+        </div>
       </div>
-      <div className="bg-muted relative hidden lg:block">
-        <img
-          src="/placeholder.svg"
-          alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-        />
-      </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 };
