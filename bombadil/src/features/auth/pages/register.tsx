@@ -32,6 +32,7 @@ export const RegisterPage = () => {
               error={error}
               onSubmit={handleSubmit}
               onChange={updateFormData}
+              onGoogleSignIn={signInWithGoogle}
             />
           </div>
         </div>

@@ -17,6 +17,7 @@ interface RegisterFormProps {
   error: string | null
   onSubmit: (e: React.FormEvent) => void
   onChange: (field: keyof RegisterFormProps['formData'], value: string) => void
+  onGoogleSignIn: () => void
   className?: string
 }
 
@@ -27,6 +28,7 @@ export function RegisterForm({
   error,
   onSubmit,
   onChange,
+  onGoogleSignIn,
   className,
   ...props
 }: RegisterFormProps) {
@@ -128,7 +130,11 @@ export function RegisterForm({
           </span>
         </div>
 
-        <GoogleLoginButton />
+        <GoogleLoginButton 
+          disabled={loading} 
+          onClick={onGoogleSignIn}
+        />
+
       </div>
 
       <div className="text-center text-sm">

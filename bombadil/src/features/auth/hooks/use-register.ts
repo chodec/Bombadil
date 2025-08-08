@@ -39,26 +39,26 @@ export const useRegister = () => {
   })
 
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {}
-    
+    const newErrors: Record<string, string> = {};
+
     if (!VALIDATION_PATTERNS.email.test(formData.email)) {
-      newErrors.email = VALIDATION_MESSAGES.email
+      newErrors.email = VALIDATION_MESSAGES.email;
     }
-    
+
     if (formData.name.trim().length < 2) {
-      newErrors.name = VALIDATION_MESSAGES.nameRequired
+      newErrors.name = VALIDATION_MESSAGES.nameRequired;
     }
-    
+
     if (!VALIDATION_PATTERNS.password.test(formData.password)) {
-      newErrors.password = VALIDATION_MESSAGES.password
+      newErrors.password = VALIDATION_MESSAGES.password;
     }
-    
+
     if (formData.password !== formData.passwordRepeat) {
-      newErrors.passwordRepeat = VALIDATION_MESSAGES.passwordMatch
+      newErrors.passwordRepeat = VALIDATION_MESSAGES.passwordMatch;
     }
-    
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

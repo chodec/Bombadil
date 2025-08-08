@@ -1,6 +1,6 @@
 export const VALIDATION_PATTERNS = {
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
+   password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?.]).{8,}$/
 }
 
 export const VALIDATION_MESSAGES = {
