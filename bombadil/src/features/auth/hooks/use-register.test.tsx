@@ -3,9 +3,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { useRegister } from './use-register';
 import { RegisterData } from '../api/types';
+import { googleLogin } from '../api/loginGoogle'; // Nový import pro Google test
 
 const mockNavigate = jest.fn();
 const mockRegisterUser = jest.fn();
+const mockGoogleLogin = jest.fn(); // Nový mock pro Google login
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -14,6 +16,10 @@ jest.mock('react-router-dom', () => ({
 
 jest.mock('../api/register', () => ({
   registerUser: (...args: any[]) => mockRegisterUser(...args),
+}));
+
+jest.mock('../api/loginGoogle', () => ({
+  googleLogin: (...args: any[]) => mockGoogleLogin(...args),
 }));
 
 const queryClient = new QueryClient({
@@ -39,12 +45,12 @@ describe('useRegister hook', () => {
     const { result } = renderHook(() => useRegister(), { wrapper });
 
     await act(async () => {
-      result.current.updateFormData('email', 'neplatny-email');
-      result.current.updateFormData('password', 'slabe');
+      result.current.onChange('email', 'neplatny-email');
+      result.current.onChange('password', 'slabe');
     });
 
     await act(async () => {
-      result.current.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+      result.current.onSubmit({ preventDefault: () => {} } as React.FormEvent);
     });
 
     expect(result.current.errors.email).toBeDefined();
@@ -69,14 +75,14 @@ describe('useRegister hook', () => {
     };
 
     await act(async () => {
-      result.current.updateFormData('email', validData.email);
-      result.current.updateFormData('name', validData.name);
-      result.current.updateFormData('password', validData.password);
-      result.current.updateFormData('passwordRepeat', validData.passwordRepeat);
+      result.current.onChange('email', validData.email);
+      result.current.onChange('name', validData.name);
+      result.current.onChange('password', validData.password);
+      result.current.onChange('passwordRepeat', validData.passwordRepeat);
     });
 
     await act(async () => {
-      result.current.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+      result.current.onSubmit({ preventDefault: () => {} } as React.FormEvent);
     });
 
     await waitFor(() => {
@@ -101,14 +107,14 @@ describe('useRegister hook', () => {
     };
 
     await act(async () => {
-      result.current.updateFormData('email', validData.email);
-      result.current.updateFormData('name', validData.name);
-      result.current.updateFormData('password', validData.password);
-      result.current.updateFormData('passwordRepeat', validData.passwordRepeat);
+      result.current.onChange('email', validData.email);
+      result.current.onChange('name', validData.name);
+      result.current.onChange('password', validData.password);
+      result.current.onChange('passwordRepeat', validData.passwordRepeat);
     });
 
     await act(async () => {
-      result.current.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+      result.current.onSubmit({ preventDefault: () => {} } as React.FormEvent);
     });
     
     await waitFor(() => {
@@ -134,16 +140,16 @@ describe('useRegister hook', () => {
     };
 
     await act(async () => {
-      result.current.updateFormData('email', validData.email);
-      result.current.updateFormData('name', validData.name);
-      result.current.updateFormData('password', validData.password);
-      result.current.updateFormData('passwordRepeat', validData.passwordRepeat);
+      result.current.onChange('email', validData.email);
+      result.current.onChange('name', validData.name);
+      result.current.onChange('password', validData.password);
+      result.current.onChange('passwordRepeat', validData.passwordRepeat);
     });
 
     expect(result.current.loading).toBe(false);
 
     await act(async () => {
-      result.current.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+      result.current.onSubmit({ preventDefault: () => {} } as React.FormEvent);
     });
 
     expect(result.current.loading).toBe(true);
@@ -175,25 +181,24 @@ describe('useRegister hook', () => {
     };
     
     await act(async () => {
-      result.current.updateFormData('email', validData.email);
-      result.current.updateFormData('name', validData.name);
-      result.current.updateFormData('password', validData.password);
-      result.current.updateFormData('passwordRepeat', validData.passwordRepeat);
+      result.current.onChange('email', validData.email);
+      result.current.onChange('name', validData.name);
+      result.current.onChange('password', validData.password);
+      result.current.onChange('passwordRepeat', validData.passwordRepeat);
     });
     
     await act(async () => {
-      result.current.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+      result.current.onSubmit({ preventDefault: () => {} } as React.FormEvent);
     });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(true);
     });
     
-    // This is the key fix: only check for the single call *after* confirming loading state
     expect(mockRegisterUser).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      result.current.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+      result.current.onSubmit({ preventDefault: () => {} } as React.FormEvent);
     });
     
     expect(mockRegisterUser).toHaveBeenCalledTimes(1);
