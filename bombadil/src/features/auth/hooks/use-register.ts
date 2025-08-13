@@ -57,6 +57,8 @@ export const useRegister = () => {
       newErrors.passwordRepeat = VALIDATION_MESSAGES.passwordMatch;
     }
 
+    console.log('Validation finished. Errors:', newErrors);
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -64,9 +66,13 @@ export const useRegister = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    console.log('handleSubmit called with data:', formData);
+
     if (!validateForm()) {
+      console.log('Validation failed, not calling API.');
       return
     }
+    console.log('Validation successful, calling API with data:', formData);
     
     registerMutation.mutate(formData)
   }
