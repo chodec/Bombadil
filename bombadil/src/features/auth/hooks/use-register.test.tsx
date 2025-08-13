@@ -1,11 +1,9 @@
-// use-register.test.tsx
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { useRegister } from './use-register';
 import { RegisterData } from '../api/types';
 
-// Mockování funkcí mimo hook
 const mockNavigate = jest.fn();
 const mockRegisterUser = jest.fn();
 
@@ -37,7 +35,6 @@ describe('useRegister hook', () => {
     queryClient.clear();
   });
 
-  // Tento test už procházel, ale pro jistotu ho ponecháme
   test('should set validation errors for invalid form data and not call API', async () => {
     const { result } = renderHook(() => useRegister(), { wrapper });
 
@@ -55,7 +52,6 @@ describe('useRegister hook', () => {
     expect(mockRegisterUser).not.toHaveBeenCalled();
   });
 
-  // OPRAVENÝ TEST: Aktualizuje data a pak teprve volá handleSubmit
   test('should handle successful registration and navigate to login page', async () => {
     mockRegisterUser.mockResolvedValueOnce({
       success: true,
@@ -72,7 +68,6 @@ describe('useRegister hook', () => {
       passwordRepeat: 'Password1!',
     };
 
-    // Nejdříve aktualizace dat v jednom bloku `act`
     await act(async () => {
       result.current.updateFormData('email', validData.email);
       result.current.updateFormData('name', validData.name);
@@ -80,7 +75,6 @@ describe('useRegister hook', () => {
       result.current.updateFormData('passwordRepeat', validData.passwordRepeat);
     });
 
-    // Až poté odeslání formuláře v dalším bloku `act`
     await act(async () => {
       result.current.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
     });
@@ -91,7 +85,6 @@ describe('useRegister hook', () => {
     });
   });
 
-  // OPRAVENÝ TEST: Zajišťuje, že se odesílají platná data před mockovanou chybou z API
   test('should set email error and not navigate on API error', async () => {
     mockRegisterUser.mockRejectedValueOnce({
       field: 'email',
@@ -107,7 +100,6 @@ describe('useRegister hook', () => {
       passwordRepeat: 'Password1!',
     };
 
-    // Nejdříve aktualizace dat
     await act(async () => {
       result.current.updateFormData('email', validData.email);
       result.current.updateFormData('name', validData.name);
@@ -115,7 +107,6 @@ describe('useRegister hook', () => {
       result.current.updateFormData('passwordRepeat', validData.passwordRepeat);
     });
 
-    // Až poté odeslání formuláře
     await act(async () => {
       result.current.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
     });
@@ -123,6 +114,97 @@ describe('useRegister hook', () => {
     await waitFor(() => {
       expect(result.current.errors.email).toBe('User with this email already exists');
       expect(mockNavigate).not.toHaveBeenCalled();
+    });
+  });
+
+  test('should set loading state correctly during API calls', async () => {
+    let resolvePromise: (value: any) => void;
+    const deferredPromise = new Promise(resolve => {
+      resolvePromise = resolve;
+    });
+    mockRegisterUser.mockReturnValue(deferredPromise);
+
+    const { result } = renderHook(() => useRegister(), { wrapper });
+
+    const validData = {
+      email: 'test@example.com',
+      name: 'Tester',
+      password: 'Password1!',
+      passwordRepeat: 'Password1!',
+    };
+
+    await act(async () => {
+      result.current.updateFormData('email', validData.email);
+      result.current.updateFormData('name', validData.name);
+      result.current.updateFormData('password', validData.password);
+      result.current.updateFormData('passwordRepeat', validData.passwordRepeat);
+    });
+
+    expect(result.current.loading).toBe(false);
+
+    await act(async () => {
+      result.current.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+    });
+
+    expect(result.current.loading).toBe(true);
+    expect(mockRegisterUser).toHaveBeenCalledWith(validData);
+
+    await act(async () => {
+      resolvePromise({ success: true, message: 'OK' });
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+  });
+
+  test('should not allow form submission while loading', async () => {
+    let resolvePromise: (value: any) => void;
+    const deferredPromise = new Promise(resolve => {
+      resolvePromise = resolve;
+    });
+    mockRegisterUser.mockReturnValue(deferredPromise);
+
+    const { result } = renderHook(() => useRegister(), { wrapper });
+
+    const validData = {
+      email: 'test@example.com',
+      name: 'Tester',
+      password: 'Password1!',
+      passwordRepeat: 'Password1!',
+    };
+    
+    await act(async () => {
+      result.current.updateFormData('email', validData.email);
+      result.current.updateFormData('name', validData.name);
+      result.current.updateFormData('password', validData.password);
+      result.current.updateFormData('passwordRepeat', validData.passwordRepeat);
+    });
+    
+    await act(async () => {
+      result.current.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(true);
+    });
+    
+    // This is the key fix: only check for the single call *after* confirming loading state
+    expect(mockRegisterUser).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      result.current.handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+    });
+    
+    expect(mockRegisterUser).toHaveBeenCalledTimes(1);
+    expect(result.current.loading).toBe(true);
+
+    await act(async () => {
+      resolvePromise({ success: true, message: 'OK' });
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
     });
   });
 });

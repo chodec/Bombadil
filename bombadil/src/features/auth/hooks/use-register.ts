@@ -1,42 +1,65 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
-import { registerUser } from '../api/register'
-import { RegisterData } from '../api/types'  
-import { VALIDATION_PATTERNS, VALIDATION_MESSAGES } from '@/lib/validation'
+import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { registerUser } from '../api/register';
+import { googleLogin } from '../api/loginGoogle';
+import { RegisterData } from '../api/types';
+
+const VALIDATION_PATTERNS = {
+  email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]|\\:;"'<,>.?/~`])[A-Za-z\d!@#$%^&*()_+={}\[\]|\\:;"'<,>.?/~`]{8,}$/,
+};
+
+const VALIDATION_MESSAGES = {
+  email: 'Invalid email format',
+  password: 'Password must have at least 8 characters, uppercase, lowercase, number and special character',
+  nameRequired: 'Name must have at least 4 characters',
+  passwordMatch: 'Passwords do not match',
+};
 
 export const useRegister = () => {
-  const navigate = useNavigate()
-  
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState<RegisterData>({
     email: '',
     name: '',
     password: '',
-    passwordRepeat: ''
-  })
-  
-  const [errors, setErrors] = useState<Record<string, string>>({})
+    passwordRepeat: '',
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [globalError, setGlobalError] = useState<string | null>(null);
 
   const registerMutation = useMutation({
     mutationFn: registerUser,
-    onSuccess: (response) => {
-      console.log('Registration successful, check email for confirmation', response)
-      navigate('/auth/login')
+    onSuccess: (data) => {
+      console.log('Registration successful, check email for confirmation', data);
+      navigate('/auth/login');
     },
     onError: (err: any) => {
-      if (err.message && err.message.includes('already exists')) {
-        setErrors(prev => ({
-          ...prev,
-          email: err.message
-        }))
-      } else if (err.field === 'email') {
-        setErrors(prev => ({
-          ...prev,
-          email: err.message
-        }))
+      if (err.field === 'email' && err.message === 'User with this email already exists') {
+        setErrors(prevErrors => ({ ...prevErrors, email: err.message }));
+      } else {
+        setGlobalError(err.message || 'Registration failed. Please try again.');
       }
+    },
+  });
+
+  const googleMutation = useMutation({
+    mutationFn: googleLogin,
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (err: any) => {
+      setGlobalError(`Google registration failed: ${err.message}`);
     }
-  })
+  });
+
+  const updateFormData = (field: keyof RegisterData, value: string) => {
+    setFormData(prevData => ({ ...prevData, [field]: value }));
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -45,7 +68,7 @@ export const useRegister = () => {
       newErrors.email = VALIDATION_MESSAGES.email;
     }
 
-    if (formData.name.trim().length < 2) {
+    if (formData.name.trim().length < 4) {
       newErrors.name = VALIDATION_MESSAGES.nameRequired;
     }
 
@@ -56,47 +79,45 @@ export const useRegister = () => {
     if (formData.password !== formData.passwordRepeat) {
       newErrors.passwordRepeat = VALIDATION_MESSAGES.passwordMatch;
     }
-
-    console.log('Validation finished. Errors:', newErrors);
-
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setGlobalError(null);
+    setErrors({});
     
-    console.log('handleSubmit called with data:', formData);
+    if (registerMutation.isPending || googleMutation.isPending) {
+        return;
+    }
 
     if (!validateForm()) {
-      console.log('Validation failed, not calling API.');
-      return
+      return;
     }
-    console.log('Validation successful, calling API with data:', formData);
-    
-    registerMutation.mutate(formData)
-  }
 
-  const updateFormData = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
-    
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }))
+    registerMutation.mutate(formData);
+  };
+  
+  const handleGoogleSignIn = () => {
+    setGlobalError(null);
+    setErrors({});
+    if (registerMutation.isPending || googleMutation.isPending) {
+        return;
     }
-  }
+    googleMutation.mutate();
+  };
+
+  const loading = registerMutation.isPending || googleMutation.isPending;
 
   return {
     formData,
-    loading: registerMutation.isPending,
-    error: registerMutation.error?.message || null,
     errors,
-    handleSubmit,
-    updateFormData
-  }
-}
+    loading,
+    error: globalError,
+    onSubmit: handleSubmit,
+    onGoogleSignIn: handleGoogleSignIn,
+    onChange: updateFormData,
+  };
+};
