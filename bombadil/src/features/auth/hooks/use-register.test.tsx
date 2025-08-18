@@ -3,11 +3,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { useRegister } from './use-register';
 import { RegisterData } from '../api/types';
-import { googleLogin } from '../api/loginGoogle'; // Nový import pro Google test
+import { googleLogin } from '../api/loginGoogle';
 
+// Mockování závislostí
 const mockNavigate = jest.fn();
 const mockRegisterUser = jest.fn();
-const mockGoogleLogin = jest.fn(); // Nový mock pro Google login
+const mockGoogleLogin = jest.fn();
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -22,6 +23,7 @@ jest.mock('../api/loginGoogle', () => ({
   googleLogin: (...args: any[]) => mockGoogleLogin(...args),
 }));
 
+// Nastavení QueryClient a Wrapperu
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: false },
@@ -35,7 +37,12 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
   </QueryClientProvider>
 );
 
+//------------------------------------
+// Opravený testovací soubor
+//------------------------------------
+
 describe('useRegister hook', () => {
+  // Testy, které nevyžadují speciální mockování window.location
   beforeEach(() => {
     jest.clearAllMocks();
     queryClient.clear();
@@ -211,5 +218,34 @@ describe('useRegister hook', () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
+  });
+
+  // Test, který způsobuje problém, je upraven tak, aby fungoval
+  test('should call Google sign-in and redirect user', async () => {
+    const googleLoginUrl = 'https://accounts.google.com/o/oauth2/v2/auth?mock=true';
+    mockGoogleLogin.mockResolvedValueOnce({ url: googleLoginUrl });
+
+    // Vytvoříme mock pro window.location a přidáme do něj vlastnost, která se dá kontrolovat
+    const mockLocation = { href: '' };
+
+    // Použijeme spyOn s getterem, abychom dočasně nahradili window.location naším mockem
+    // To je nejspolehlivější způsob, jak obejít omezení JSDOM
+    // @ts-ignore - Jest spyOn pro 'get' je funkční, ale TS to může hlásit jako chybu
+    const spy = jest.spyOn(window, 'location', 'get').mockReturnValue(mockLocation);
+    
+    const { result } = renderHook(() => useRegister(), { wrapper });
+
+    await act(async () => {
+      result.current.onGoogleSignIn();
+    });
+
+    await waitFor(() => {
+      expect(mockGoogleLogin).toHaveBeenCalledTimes(1);
+      // Ověříme, že mock objekt zachytil správnou URL
+      expect(mockLocation.href).toBe(googleLoginUrl);
+    });
+
+    // Po testu vrátíme původní chování, aby nedošlo ke kolizím v jiných testech
+    spy.mockRestore();
   });
 });

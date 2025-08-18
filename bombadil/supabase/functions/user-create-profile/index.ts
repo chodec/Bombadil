@@ -22,40 +22,27 @@ serve(async (req) => {
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         );
 
-        const { data: existingUser, error: checkError } = await supabaseAdmin
+        const { data: user, error: upsertError } = await supabaseAdmin
             .from('users')
-            .select('*')
-            .eq('id', id)
+            .upsert({
+                id: id,
+                email: email,
+                name: name,
+                role: 'pending',
+                registration_method: registration_method
+            }, {
+                onConflict: 'id'
+            })
+            .select()
             .maybeSingle();
 
-        if (checkError) {
-            console.error('Error checking for existing user:', checkError);
-            throw checkError;
+        if (upsertError) {
+            console.error('Error with upsert operation:', upsertError);
+            throw upsertError;
         }
 
-        if (!existingUser) {
-            console.log('User not found. Inserting new user...');
-            const { data: newUser, error: insertError } = await supabaseAdmin
-                .from('users')
-                .insert({
-                    id: id,
-                    email: email,
-                    name: name,
-                    role: 'pending',
-                    registration_method: registration_method
-                })
-                .select();
-            
-            if (insertError) {
-                console.error('Error inserting new user:', insertError);
-                throw insertError;
-            }
-            console.log('User inserted successfully. Returning response.');
-            return new Response(JSON.stringify(newUser), { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        }
-
-        console.log('User found. Returning existing user data.');
-        return new Response(JSON.stringify(existingUser), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        console.log('User data processed successfully.');
+        return new Response(JSON.stringify(user), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
     } catch (error) {
         console.error('Final error in catch block:', error);
