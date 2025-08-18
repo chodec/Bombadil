@@ -38,7 +38,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 //------------------------------------
-// Opravený testovací soubor
+// Nová, opravená verze
 //------------------------------------
 
 describe('useRegister hook', () => {
