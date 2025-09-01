@@ -1,17 +1,17 @@
 import { TrainerLayout } from "@/components/trainer/dashboard-layout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { 
   Users, 
   Calendar, 
   DollarSign, 
-  TrendingUp,
   Activity
 } from "lucide-react"
 
+import { InfoCard } from "@/components/trainer/InfoCard"
+
 export const TrainerDashboardPage = () => {
-  // Mock data - later replace with actual API calls
   const stats = {
     totalClients: 24,
     activeClients: 18,
@@ -51,59 +51,32 @@ export const TrainerDashboardPage = () => {
 
           <Separator />
 
-          {/* Stats Cards */}
+          {/* Stats Cards using the imported InfoCard component */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalClients}</div>
-                <p className="text-xs text-muted-foreground">
-                  +2 from last month
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.activeClients}</div>
-                <p className="text-xs text-muted-foreground">
-                  {Math.round((stats.activeClients / stats.totalClients) * 100)}% of total
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Today's Sessions</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.todaysSessions}</div>
-                <p className="text-xs text-muted-foreground">
-                  3 completed, 3 remaining
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${stats.monthlyRevenue}</div>
-                <p className="text-xs text-muted-foreground">
-                  +15% from last month
-                </p>
-              </CardContent>
-            </Card>
+            <InfoCard 
+              title="Total Clients"
+              value={stats.totalClients}
+              description="+2 from last month"
+              icon={Users}
+            />
+            <InfoCard 
+              title="Active Clients"
+              value={stats.activeClients}
+              description={`${Math.round((stats.activeClients / stats.totalClients) * 100)}% of total`}
+              icon={Activity}
+            />
+            <InfoCard 
+              title="Today's Sessions"
+              value={stats.todaysSessions}
+              description="3 completed, 3 remaining"
+              icon={Calendar}
+            />
+            <InfoCard 
+              title="Monthly Revenue"
+              value={`$${stats.monthlyRevenue}`}
+              description="+15% from last month"
+              icon={DollarSign}
+            />
           </div>
 
           {/* Content Grid */}
