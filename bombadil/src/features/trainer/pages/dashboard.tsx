@@ -9,7 +9,7 @@ import {
   Activity
 } from "lucide-react"
 
-import { InfoCard } from "@/components/trainer/InfoCard"
+import { InfoCard } from "@/components/trainer/info-card"
 
 export const TrainerDashboardPage = () => {
   const stats = {
